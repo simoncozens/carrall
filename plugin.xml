@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ 
+<plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
+           id="org.simon-cozens.carrall"
+      version="0.1.0">
+    <name>Carrall</name>
+    <description>Useful</description>
+    <license>MIT</license>
+    <keywords>phonegap,calendar</keywords>
+ 
+    <!-- Javascript-only plugin -->
+    <js-module src="www/carrall.js" name="Carrall">
+        <clobbers target="window.carrall" />
+    </js-module>
+</plugin>
