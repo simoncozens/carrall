@@ -1,4 +1,4 @@
-window.carrall = {
+module.exports = window.carrall = {
   setup: function(cb) {
     var _gotFS;
     _gotFS = function(fs) {

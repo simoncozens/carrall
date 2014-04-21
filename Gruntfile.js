@@ -15,7 +15,7 @@ module.exports = function(grunt) {
       },
       dist: {
         files: {
-          'carrall.min.js': 'src/carrall.js'
+          'carrall.min.js': 'www/carrall.js'
         }
       }
     },

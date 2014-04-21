@@ -8,7 +8,7 @@ web-deployed versions of your PhoneGap applications.
 
 # Methods
 
-    window.carrall =
+    module.exports = window.carrall =
 
 ## `setup(cb)`
 
