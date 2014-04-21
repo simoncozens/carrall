@@ -5,7 +5,7 @@ module.exports = function(grunt) {
       compile: {
         options: { bare: "true" },
         files: {
-          "src/carrall.js" : "coffee/**/*"
+          "www/carrall.js" : "coffee/**/*"
         }
       }
     },
