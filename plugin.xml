@@ -8,7 +8,9 @@
     <description>Useful tools for Phonegap developers</description>
     <license>MIT</license>
     <keywords>phonegap,calendar</keywords>
- 
+    <dependency id="org.apache.cordova.network-information" />
+    <dependency id="org.apache.cordova.device" />
+    <dependency id="org.apache.cordova.file" />
     <!-- Javascript-only plugin -->
     <js-module src="www/carrall.js" name="Carrall">
         <clobbers target="window.carrall" />

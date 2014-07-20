@@ -19,7 +19,18 @@ module.exports = window.carrall = {
     }
   },
   hasInternetConnection: function() {
-    return navigator.onLine || (navigator.connection.type !== Connection.NONE);
+    if (navigator.connection) {
+      return navigator.connection.type !== Connection.NONE;
+    } else {
+      return navigator.onLine;
+    }
+  },
+  hasDecentInternetConnection: function() {
+    if (navigator.connection) {
+      return navigator.connection.type === Connection.CELL_3G || navigator.connection.type === Connection.CELL_4G || navigator.connection.type === Connection.WIFI || navigator.connection.type === Connection.ETHERNET;
+    } else {
+      return navigator.onLine;
+    }
   },
   getSystemLanguage: function() {
     var lang;

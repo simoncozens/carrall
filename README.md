@@ -20,6 +20,11 @@ Returns true if the platform is iOS, false otherwise.
 
 Returns true if the browser has an Internet connection.
 
+## `carrall.hasDecentInternetConnection()`
+
+Returns true if the browser has an Internet connection, or, in Phonegap, has a
+connection of 3G or better.
+
 ## `carrall.getSystemLanguage()`
 
 Returns a two-character ISO language code for the device's interface.

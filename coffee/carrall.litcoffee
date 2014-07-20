@@ -38,7 +38,22 @@ Returns true if the platform is iOS, false otherwise.
 Returns true if the browser has an Internet connection.
 
     hasInternetConnection: ->
-      return navigator.onLine || (navigator.connection.type != Connection.NONE)
+      if (navigator.connection)
+        return navigator.connection.type != Connection.NONE
+      else return navigator.onLine
+
+## `carrall.hasDecentInternetConnection()`
+
+Returns true if the browser has an Internet connection, or, in Phonegap, has a
+connection of 3G or better.
+
+    hasDecentInternetConnection: ->
+      if (navigator.connection)
+        return navigator.connection.type == Connection.CELL_3G || 
+          navigator.connection.type == Connection.CELL_4G ||
+          navigator.connection.type == Connection.WIFI || 
+          navigator.connection.type == Connection.ETHERNET
+      else return navigator.onLine
 
 ## `carrall.getSystemLanguage()`
 
