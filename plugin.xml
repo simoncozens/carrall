@@ -2,12 +2,12 @@
  
 <plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
            id="org.simon-cozens.carrall"
-      version="0.1.0">
+      version="0.1.3">
     <name>Carrall</name>
     <author>Simon Cozens</author>
     <description>Useful tools for Phonegap developers</description>
     <license>MIT</license>
-    <keywords>phonegap,calendar</keywords>
+    <keywords>phonegap</keywords>
     <dependency id="org.apache.cordova.network-information" />
     <dependency id="org.apache.cordova.device" />
     <dependency id="org.apache.cordova.file" />

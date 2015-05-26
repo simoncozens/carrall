@@ -8,19 +8,31 @@ web-deployed versions of your PhoneGap applications.
 
 # Methods
 
+    if not module then module = {}
+
     module.exports = window.carrall =
 
 ## `setup(cb)`
 
 Sets up Carrall's environment and calls the callback.
 
+    fsTries: 0
+
     setup: (cb) ->
       _gotFS = (fs) -> 
-        carrall._fsroot = fs.root
-        cb()
+        if (fs.isDirectory)
+          carrall._fsroot = fs
+          cb()
+        else if carrall.fsTries < 5
+          console.log("Didn't get fs object, trying again")
+          carrall.fsTries++
+          window.setTimeout (->carrall.setup(cb)), 500
+        else
+          alert("Failed to get file system object");
 
-      if (window.requestFileSystem) # We resume that we're running under Phonegap, but...
-        window.requestFileSystem LocalFileSystem.PERSISTENT, 0, _gotFS, cb
+      if (window.cordova)
+        where = if carrall.isIOS() then cordova.file.dataDirectory else cordova.file.externalApplicationStorageDirectory
+        window.resolveLocalFileSystemURL(where, _gotFS, _gotFS)
       else
         cb()
 
@@ -32,6 +44,15 @@ Returns true if the platform is iOS, false otherwise.
       if (window.device && window.device.platform)
         return device.platform == "iOS"
       else return /iphone|ipad|ipod/i.test(navigator.userAgent)
+
+## `carrall.isAndroid()`
+
+Returns true if the platform is Android, false otherwise.
+
+    isAndroid: ->
+      if (window.device && window.device.platform)
+        return device.platform == "Android"
+      else return /android/i.test(navigator.userAgent)
 
 ## `carrall.hasInternetConnection()`
 
@@ -74,6 +95,8 @@ Returns a two-character ISO language code for the device's interface.
           lang = navigator.userLanguage;
         lang = lang.substr(0, 2);
 
+      if !lang
+        return "en"
       return lang
 
 ## `localize(sid)`
@@ -84,16 +107,15 @@ this looks up the given string ID in the current interface language. Some of the
 functions below will expect certain strings to be supplied.
 
     localize: (sid) ->
-      return Localisation.Strings[carrall.getSystemLanguage()][sid] || "Lazy developer did not provide string for "+sid+" in language "+carrall.language;
+      return Localisation.Strings[carrall.getSystemLanguage()][sid] || Localisation.Strings["en"][sid]
 
 ## `orientation()`
 
-Returns `"landscape"` or `"portrait"` as appropriate.
+Returns `"landscape"` or `"portrait"` as appropriate. Does not use the untrustworthy
+`window.orientation`
 
     orientation: ->
-      if (window.orientation == -90 || window.orientation == 90)
-        return "landscape";
-      return "portrait";
+      return if (window.innerWidth > window.innerHeight) then "landscape" else "portrait"
 
 ## `getPhonegapPath()`
 
@@ -103,6 +125,20 @@ Returns the file path of the application.
       path = window.location.pathname
       phoneGapPath = path.substring(0, path.lastIndexOf('/') + 1);
       return phoneGapPath
+
+## `rerootPathUnderApp(path)`
+
+On upgrading an application on iOS, a new GUID is generated for the application's sandbox
+directory, meaning that all old stored absolute paths are invalid. This sucks. Ideally you
+should store everything as a relative path, but if you didn't this helps get back on your feet.
+
+    rerootPathUnderApp: (path) ->
+      return path if not carrall.isIOS()
+      newUIDm = cordova.file.applicationStorageDirectory.match(/.*\/([0-9A-F-]{8,})/)
+      if newUIDm
+        newUID = newUIDm[1]
+        return path.replace(/(.*\/)[0-9A-F-]{8,}/,"$1"+newUID)
+      return path
 
 ## `ensureFreeSpace(howmuch, cb)`
 
@@ -136,6 +172,8 @@ Disables PhoneGap's annoying tendency to allow the user to scroll the viewport. 
 still necessary under PhoneGap 3?)
 
     stopVScroll: (selector, height, strictness) ->
+      return if not window.cordova
+
       document.addEventListener "touchmove", ((e) ->
         #var me = $(document.elementFromPoint(e.pageX, e.pageY));
         me = $(e.target)
@@ -162,9 +200,13 @@ still necessary under PhoneGap 3?)
 
 Writes out the object as a JSON file to the permanent filesystem.
 
-    saveJSONFile: (filename, object) ->
+    saveJSONFile: (filename, object, replacer) ->
+      if (!window.cordova)
+        window.localStorage.setItem(filename, JSON.stringify(object, replacer))
+        return
+
       fail = (e) -> console.log e
-      _write = (writer) -> writer.write JSON.stringify(object)
+      _write = (writer) -> writer.write JSON.stringify(object, replacer)
       _gotFileEntry = (e) -> e.createWriter _write, fail
 
       carrall._fsroot.getFile filename,
@@ -179,18 +221,27 @@ Deserializes the JSON contained in a file into a variable specified by `root[key
 then calls the given callback.
 
     loadJSONFile: (filename, root, key, cb) ->
+
       fail = cb
+      if (!window.cordova)
+        data = window.localStorage.getItem(filename)
+        root[key] = JSON.parse(data) if data
+        return cb()
+
       _gotFile = (file) ->
         reader = new FileReader()
         reader.onloadend = (evt) ->
-          res = JSON.parse(evt.target.result)
+          try
+            res = JSON.parse(evt.target.result)
+          catch
+            # Do nothing
           root[key] = res  if res
           cb()
 
         reader.onerror = (e) -> console.log e
 
         reader.readAsText file
-        cb()  if file.size is 0
+        # cb()  if file.size is 0
 
       _gotFileEntry = (e) -> e.file _gotFile, fail
         
@@ -205,6 +256,10 @@ Writes out the object as an XML file to the permanent filesystem and calls the c
 
     saveXML: (path, dom, cb) ->
       xml = (new XMLSerializer()).serializeToString(dom[0])
+      if (!window.cordova)
+        window.localStorage.setItem(path, xml)
+        return cb()
+
       fail = (e) -> console.log e
       _write = (writer) ->
         writer.onwriteend = cb
@@ -225,6 +280,11 @@ Loads the XML serialised in the filename into a DOM object, calling the callback
 or calling error callback on error.
 
     loadXML: (path, cb, ecb) ->
+      if (!window.cordova)
+        data = window.localStorage.getItem(path)
+        return cb($data) if data
+        return ecb()
+
       if !path.match(/^file:\//) # Android does, iOS doesn't
         path = "file://"+path
       if (!ecb)

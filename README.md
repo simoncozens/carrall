@@ -16,6 +16,10 @@ Sets up Carrall's environment and calls the callback.
 
 Returns true if the platform is iOS, false otherwise.
 
+## `carrall.isAndroid()`
+
+Returns true if the platform is Android, false otherwise.
+
 ## `carrall.hasInternetConnection()`
 
 Returns true if the browser has an Internet connection.
@@ -38,11 +42,18 @@ functions below will expect certain strings to be supplied.
 
 ## `orientation()`
 
-Returns `"landscape"` or `"portrait"` as appropriate.
+Returns `"landscape"` or `"portrait"` as appropriate. Does not use the untrustworthy
+`window.orientation`
 
 ## `getPhonegapPath()`
 
 Returns the file path of the application.
+
+## `rerootPathUnderApp(path)`
+
+On upgrading an application on iOS, a new GUID is generated for the application's sandbox
+directory, meaning that all old stored absolute paths are invalid. This sucks. Ideally you
+should store everything as a relative path, but if you didn't this helps get back on your feet.
 
 ## `ensureFreeSpace(howmuch, cb)`
 

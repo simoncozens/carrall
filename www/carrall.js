@@ -1,12 +1,30 @@
+var module;
+
+if (!module) {
+  module = {};
+}
+
 module.exports = window.carrall = {
+  fsTries: 0,
   setup: function(cb) {
-    var _gotFS;
+    var where, _gotFS;
     _gotFS = function(fs) {
-      carrall._fsroot = fs.root;
-      return cb();
+      if (fs.isDirectory) {
+        carrall._fsroot = fs;
+        return cb();
+      } else if (carrall.fsTries < 5) {
+        console.log("Didn't get fs object, trying again");
+        carrall.fsTries++;
+        return window.setTimeout((function() {
+          return carrall.setup(cb);
+        }), 500);
+      } else {
+        return alert("Failed to get file system object");
+      }
     };
-    if (window.requestFileSystem) {
-      return window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, _gotFS, cb);
+    if (window.cordova) {
+      where = carrall.isIOS() ? cordova.file.dataDirectory : cordova.file.externalApplicationStorageDirectory;
+      return window.resolveLocalFileSystemURL(where, _gotFS, _gotFS);
     } else {
       return cb();
     }
@@ -16,6 +34,13 @@ module.exports = window.carrall = {
       return device.platform === "iOS";
     } else {
       return /iphone|ipad|ipod/i.test(navigator.userAgent);
+    }
+  },
+  isAndroid: function() {
+    if (window.device && window.device.platform) {
+      return device.platform === "Android";
+    } else {
+      return /android/i.test(navigator.userAgent);
     }
   },
   hasInternetConnection: function() {
@@ -49,22 +74,38 @@ module.exports = window.carrall = {
       }
       lang = lang.substr(0, 2);
     }
+    if (!lang) {
+      return "en";
+    }
     return lang;
   },
   localize: function(sid) {
-    return Localisation.Strings[carrall.getSystemLanguage()][sid] || "Lazy developer did not provide string for " + sid + " in language " + carrall.language;
+    return Localisation.Strings[carrall.getSystemLanguage()][sid] || Localisation.Strings["en"][sid];
   },
   orientation: function() {
-    if (window.orientation === -90 || window.orientation === 90) {
+    if (window.innerWidth > window.innerHeight) {
       return "landscape";
+    } else {
+      return "portrait";
     }
-    return "portrait";
   },
   getPhonegapPath: function() {
     var path, phoneGapPath;
     path = window.location.pathname;
     phoneGapPath = path.substring(0, path.lastIndexOf('/') + 1);
     return phoneGapPath;
+  },
+  rerootPathUnderApp: function(path) {
+    var newUID, newUIDm;
+    if (!carrall.isIOS()) {
+      return path;
+    }
+    newUIDm = cordova.file.applicationStorageDirectory.match(/.*\/([0-9A-F-]{8,})/);
+    if (newUIDm) {
+      newUID = newUIDm[1];
+      return path.replace(/(.*\/)[0-9A-F-]{8,}/, "$1" + newUID);
+    }
+    return path;
   },
   ensureFreeSpace: function(bytes, cb) {
     return window.requestFileSystem(LocalFileSystem.PERSISTENT, bytes, cb, function() {
@@ -89,6 +130,9 @@ module.exports = window.carrall = {
   },
   stopVScroll: function(selector, height, strictness) {
     var touch_event_start;
+    if (!window.cordova) {
+      return;
+    }
     document.addEventListener("touchmove", (function(e) {
       var me;
       me = $(e.target);
@@ -111,13 +155,17 @@ module.exports = window.carrall = {
       }
     });
   },
-  saveJSONFile: function(filename, object) {
+  saveJSONFile: function(filename, object, replacer) {
     var fail, _gotFileEntry, _write;
+    if (!window.cordova) {
+      window.localStorage.setItem(filename, JSON.stringify(object, replacer));
+      return;
+    }
     fail = function(e) {
       return console.log(e);
     };
     _write = function(writer) {
-      return writer.write(JSON.stringify(object));
+      return writer.write(JSON.stringify(object, replacer));
     };
     _gotFileEntry = function(e) {
       return e.createWriter(_write, fail);
@@ -128,14 +176,25 @@ module.exports = window.carrall = {
     }, _gotFileEntry, fail);
   },
   loadJSONFile: function(filename, root, key, cb) {
-    var fail, _gotFile, _gotFileEntry;
+    var data, fail, _gotFile, _gotFileEntry;
     fail = cb;
+    if (!window.cordova) {
+      data = window.localStorage.getItem(filename);
+      if (data) {
+        root[key] = JSON.parse(data);
+      }
+      return cb();
+    }
     _gotFile = function(file) {
       var reader;
       reader = new FileReader();
       reader.onloadend = function(evt) {
         var res;
-        res = JSON.parse(evt.target.result);
+        try {
+          res = JSON.parse(evt.target.result);
+        } catch (_error) {
+
+        }
         if (res) {
           root[key] = res;
         }
@@ -144,10 +203,7 @@ module.exports = window.carrall = {
       reader.onerror = function(e) {
         return console.log(e);
       };
-      reader.readAsText(file);
-      if (file.size === 0) {
-        return cb();
-      }
+      return reader.readAsText(file);
     };
     _gotFileEntry = function(e) {
       return e.file(_gotFile, fail);
@@ -160,6 +216,10 @@ module.exports = window.carrall = {
   saveXML: function(path, dom, cb) {
     var fail, xml, _gotFileEntry, _write;
     xml = (new XMLSerializer()).serializeToString(dom[0]);
+    if (!window.cordova) {
+      window.localStorage.setItem(path, xml);
+      return cb();
+    }
     fail = function(e) {
       return console.log(e);
     };
@@ -178,7 +238,14 @@ module.exports = window.carrall = {
     }, _gotFileEntry, fail);
   },
   loadXML: function(path, cb, ecb) {
-    var noncedPath;
+    var data, noncedPath;
+    if (!window.cordova) {
+      data = window.localStorage.getItem(path);
+      if (data) {
+        return cb($data);
+      }
+      return ecb();
+    }
     if (!path.match(/^file:\//)) {
       path = "file://" + path;
     }
