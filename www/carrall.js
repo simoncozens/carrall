@@ -22,6 +22,9 @@ module.exports = window.carrall = {
         return alert("Failed to get file system object");
       }
     };
+    $("label").each(function(k, l) {
+      return $(l).html(carrall.localize(l.id.replace(/Label$/, "")));
+    });
     if (window.cordova) {
       where = carrall.isIOS() ? cordova.file.dataDirectory : cordova.file.externalApplicationStorageDirectory;
       return window.resolveLocalFileSystemURL(where, _gotFS, _gotFS);
@@ -38,12 +41,15 @@ module.exports = window.carrall = {
   },
   isAndroid: function() {
     if (window.device && window.device.platform) {
-      return device.platform === "Android";
+      return device.platform === "Android" || device.platform === "amazon-fireos";
     } else {
       return /android/i.test(navigator.userAgent);
     }
   },
   hasInternetConnection: function() {
+    if (carrall.isAndroid() && cordova && !navigator.connection) {
+      alert("You need to install the org.apache.cordova.network-information plugin");
+    }
     if (navigator.connection) {
       return navigator.connection.type !== Connection.NONE;
     } else {
@@ -97,13 +103,13 @@ module.exports = window.carrall = {
   },
   rerootPathUnderApp: function(path) {
     var newUID, newUIDm;
-    if (!carrall.isIOS()) {
+    if (!cordova || !carrall.isIOS()) {
       return path;
     }
     newUIDm = cordova.file.applicationStorageDirectory.match(/.*\/([0-9A-F-]{8,})/);
     if (newUIDm) {
       newUID = newUIDm[1];
-      return path.replace(/(.*\/)[0-9A-F-]{8,}/, "$1" + newUID);
+      return path.replace(/(.*\/)[0-9A-F-]{8,}\//, "$1" + newUID + "/");
     }
     return path;
   },
