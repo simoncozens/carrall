@@ -47,7 +47,7 @@ module.exports = window.carrall = {
     }
   },
   hasInternetConnection: function() {
-    if (carrall.isAndroid() && cordova && !navigator.connection) {
+    if (carrall.isAndroid() && window.cordova && !navigator.connection) {
       alert("You need to install the org.apache.cordova.network-information plugin");
     }
     if (navigator.connection) {
@@ -103,7 +103,7 @@ module.exports = window.carrall = {
   },
   rerootPathUnderApp: function(path) {
     var newUID, newUIDm;
-    if (!cordova || !carrall.isIOS()) {
+    if (!window.cordova || !carrall.isIOS()) {
       return path;
     }
     newUIDm = cordova.file.applicationStorageDirectory.match(/.*\/([0-9A-F-]{8,})/);

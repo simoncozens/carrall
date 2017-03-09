@@ -62,7 +62,7 @@ Returns true if the platform is Android, false otherwise.
 Returns true if the browser has an Internet connection.
 
     hasInternetConnection: ->
-      if (carrall.isAndroid() and cordova and not navigator.connection)
+      if (carrall.isAndroid() and window.cordova and not navigator.connection)
         alert("You need to install the org.apache.cordova.network-information plugin")
       if (navigator.connection)
         return navigator.connection.type != Connection.NONE
@@ -138,7 +138,7 @@ directory, meaning that all old stored absolute paths are invalid. This sucks. I
 should store everything as a relative path, but if you didn't this helps get back on your feet.
 
     rerootPathUnderApp: (path) ->
-      return path if not cordova or not carrall.isIOS()
+      return path if not window.cordova or not carrall.isIOS()
       newUIDm = cordova.file.applicationStorageDirectory.match(/.*\/([0-9A-F-]{8,})/)
       if newUIDm
         newUID = newUIDm[1]
